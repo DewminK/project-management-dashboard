@@ -93,11 +93,6 @@ export default function Login() {
         <button className="link-button" onClick={() => setIsSignupMode(true)} type="button">
           Don&apos;t have an account? Sign Up
         </button>
-
-        <p className="demo-credentials">
-          Demo PM: manager@demo.com / password123<br />
-          Demo Member: member@demo.com / password123
-        </p>
       </div>
     </div>
   );
