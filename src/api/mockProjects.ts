@@ -4,17 +4,7 @@ import type { User } from "../types/auth";
 
 const PROJECTS_STORAGE_KEY = "pmd_projects";
 
-const INITIAL_PROJECTS: Project[] = [
-    {
-        id: "project-1",
-        name: "Website Revamp",
-        description: "Upgrade the client marketing website using a new design system.",
-        status: "In Progress",
-        managerId: "pm-1",
-        memberIds: ["tm-1"],
-        createdAt: new Date().toISOString(),
-    },
-];
+const INITIAL_PROJECTS: Project[] = [];
 
 function sleep(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));

@@ -7,36 +7,15 @@ import type {
     User,
 } from "../types/auth";
 
-const USERS_STORAGE_KEY = import.meta.env.VITE_USERS_STORAGE_KEY || "pmd_users";
-const AUTH_TOKEN_PREFIX = import.meta.env.VITE_AUTH_TOKEN_PREFIX || "mock-token";
-const DEMO_MANAGER_EMAIL = import.meta.env.VITE_DEMO_MANAGER_EMAIL || "manager@demo.com";
-const DEMO_TEAM_MEMBER_EMAIL =
-    import.meta.env.VITE_DEMO_TEAM_MEMBER_EMAIL || "member@demo.com";
-const DEMO_PASSWORD_HASH =
-    import.meta.env.VITE_DEMO_PASSWORD_HASH ||
-    "ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f";
+const USERS_STORAGE_KEY = import.meta.env.VITE_USERS_STORAGE_KEY ;
+const AUTH_TOKEN_PREFIX = import.meta.env.VITE_AUTH_TOKEN_PREFIX;
 
 type PersistedStoredUser = Omit<StoredUser, "passwordHash"> & {
     passwordHash?: string;
     password?: string;
 };
 
-const INITIAL_USERS: StoredUser[] = [
-    {
-        id: "pm-1",
-        name: "Dewmin Deniyegedara",
-        email: DEMO_MANAGER_EMAIL,
-        passwordHash: DEMO_PASSWORD_HASH,
-        role: UserRoles.ProjectManager,
-    },
-    {
-        id: "tm-1",
-        name: "Sehara Fernando",
-        email: DEMO_TEAM_MEMBER_EMAIL,
-        passwordHash: DEMO_PASSWORD_HASH,
-        role: UserRoles.TeamMember,
-    },
-];
+const INITIAL_USERS: StoredUser[] = [];
 
 function sleep(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
@@ -125,8 +104,6 @@ function normalizeEmail(email: string): string {
 }
 
 export async function mockLogin(credentials: LoginRequest): Promise<AuthResponse> {
-    await sleep(750);
-
     const users = await getStoredUsers();
     const passwordHash = await hashPassword(credentials.password);
     const match = users.find(
@@ -146,8 +123,6 @@ export async function mockLogin(credentials: LoginRequest): Promise<AuthResponse
 }
 
 export async function mockSignup(payload: SignupRequest): Promise<AuthResponse> {
-    await sleep(900);
-
     const users = await getStoredUsers();
     const email = normalizeEmail(payload.email);
     const isExists = users.some((user) => normalizeEmail(user.email) === email);
