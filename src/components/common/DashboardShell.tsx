@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import type { ReactNode } from "react";
 import { useLogoutMutation } from "../../hooks/useAuth";
 import { useAuthStore } from "../../store/authStore";
@@ -25,6 +25,25 @@ export default function DashboardShell({ children }: DashboardShellProps) {
 			<aside className="dashboard-sidebar">
 				<div className="dashboard-brand">Project Board</div>
 				<p className="dashboard-role">{user?.role ?? ""}</p>
+				<nav className="dashboard-nav" aria-label="Dashboard Navigation">
+					<NavLink
+						to="/dashboard"
+						end
+						className={({ isActive }) =>
+							`dashboard-nav-link ${isActive ? "active" : ""}`.trim()
+						}
+					>
+						Overview
+					</NavLink>
+					<NavLink
+						to="/dashboard/kanban"
+						className={({ isActive }) =>
+							`dashboard-nav-link ${isActive ? "active" : ""}`.trim()
+						}
+					>
+						Kanban Board
+					</NavLink>
+				</nav>
 				<button className="ghost-button" onClick={handleLogout} type="button">
 					{logoutMutation.isPending ? "Logging out..." : "Logout"}
 				</button>
