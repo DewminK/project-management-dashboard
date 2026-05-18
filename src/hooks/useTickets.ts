@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
 	mockCreateTicket,
 	mockFetchTickets,
+	mockUpdateTicketAssignee,
 	mockUpdateTicketStatus,
 } from "../api/mockTickets";
 import { useAuthStore } from "../store/authStore";
@@ -62,6 +63,27 @@ export function useUpdateTicketStatusMutation(projectId: string | null) {
 			}
 
 			return mockUpdateTicketStatus(user, args.ticketId, args.status);
+		},
+		onSuccess: async () => {
+			if (!projectId) {
+				return;
+			}
+			await queryClient.invalidateQueries({ queryKey: getTicketQueryKey(projectId) });
+		},
+	});
+}
+
+export function useUpdateTicketAssigneeMutation(projectId: string | null) {
+	const user = useAuthStore((state) => state.user);
+	const queryClient = useQueryClient();
+
+	return useMutation({
+		mutationFn: (args: { ticketId: string; assigneeId: string }) => {
+			if (!user) {
+				throw new Error("User not found.");
+			}
+
+			return mockUpdateTicketAssignee(user, args.ticketId, args.assigneeId);
 		},
 		onSuccess: async () => {
 			if (!projectId) {
