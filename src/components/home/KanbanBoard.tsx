@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { DragEvent, FormEvent } from "react";
+import type { DragEvent } from "react";
 import { useTeamMembersQuery } from "../../hooks/useAuth";
 import { useProjectsQuery } from "../../hooks/useProjects";
 import {
-	useCreateTicketMutation,
 	useTicketsQuery,
 	useUpdateTicketStatusMutation,
 } from "../../hooks/useTickets";
 import { TicketStatus } from "../../types/ticket";
 import type { Ticket, TicketStatus as TicketStatusType } from "../../types/ticket";
+import { useProjectContext } from "../../context/ProjectContext";
 
 interface KanbanBoardProps {
 	canEdit: boolean;
@@ -24,11 +24,7 @@ export default function KanbanBoard({ canEdit }: KanbanBoardProps) {
 
     //throw new Error("Test crash: Kanban board rendering failed");
 	const { data: projects, isLoading, isError, error } = useProjectsQuery();
-	const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
-	const [ticketName, setTicketName] = useState("");
-	const [assigneeId, setAssigneeId] = useState("");
-	const [estimatedHours, setEstimatedHours] = useState("2");
-	const [ticketFormError, setTicketFormError] = useState("");
+	const { selectedProjectId } = useProjectContext();
 	const [draggingTicketId, setDraggingTicketId] = useState<string | null>(null);
 	const [activeColumn, setActiveColumn] = useState<TicketStatusType | null>(null);
 
@@ -48,21 +44,6 @@ export default function KanbanBoard({ canEdit }: KanbanBoardProps) {
 	// 	throw new Error("Test crash: Kanban board rendering failed");
 	// }
 
-	useEffect(() => {
-		if (!availableProjects.length) {
-			setSelectedProjectId(null);
-			return;
-		}
-
-		setSelectedProjectId((current) => {
-			const isCurrentAvailable = availableProjects.some(
-				(project) => project.id === current
-			);
-
-			return isCurrentAvailable ? current : availableProjects[0].id;
-		});
-	}, [availableProjects]);
-
 	const selectedProject = useMemo(
 		() => availableProjects.find((project) => project.id === selectedProjectId) ?? null,
 		[availableProjects, selectedProjectId]
@@ -75,44 +56,12 @@ export default function KanbanBoard({ canEdit }: KanbanBoardProps) {
 		error: ticketsError,
 	} = useTicketsQuery(selectedProjectId);
 	const { data: members } = useTeamMembersQuery(true);
-	const createTicketMutation = useCreateTicketMutation(selectedProjectId);
 	const updateTicketStatusMutation = useUpdateTicketStatusMutation(selectedProjectId);
 
 	const memberMap = useMemo(
 		() => new Map((members ?? []).map((member) => [member.id, member.name])),
 		[members]
 	);
-
-	const assignableMembers = useMemo(() => {
-		if (!selectedProject) {
-			return [];
-		}
-
-		return selectedProject.memberIds
-			.map((memberId) => {
-				const memberName = memberMap.get(memberId);
-				return memberName
-					? {
-						id: memberId,
-						name: memberName,
-					}
-					: null;
-			})
-			.filter((member): member is { id: string; name: string } => Boolean(member));
-	}, [memberMap, selectedProject]);
-
-	useEffect(() => {
-		if (!assignableMembers.length) {
-			setAssigneeId("");
-			return;
-		}
-        console.log("Assignable members updated:", assignableMembers);
-
-		setAssigneeId((current) => {
-			const exists = assignableMembers.some((member) => member.id === current);
-			return exists ? current : assignableMembers[0].id;
-		});
-	}, [assignableMembers]);
 
 	const projectsByStatus = useMemo(() => {
 		const grouped: Record<TicketStatusType, Ticket[]> = {
@@ -193,66 +142,6 @@ export default function KanbanBoard({ canEdit }: KanbanBoardProps) {
 		[canEdit, draggingTicketId, findTicket, handleDragEnd, updateTicketStatusMutation]
 	);
 
-	const handleCreateTicket = useCallback(
-		(event: FormEvent<HTMLFormElement>) => {
-			event.preventDefault();
-			setTicketFormError("");
-
-			if (!canEdit) {
-				return;
-			}
-
-			if (!selectedProjectId) {
-				setTicketFormError("Please select a project first.");
-				return;
-			}
-
-			const parsedHours = Number(estimatedHours);
-			if (!ticketName.trim()) {
-				setTicketFormError("Ticket name is required.");
-				return;
-			}
-
-			if (!assigneeId) {
-				setTicketFormError("Please assign a team member.");
-				return;
-			}
-
-			if (!Number.isFinite(parsedHours) || parsedHours <= 0) {
-				setTicketFormError("Estimated time must be a positive number.");
-				return;
-			}
-
-			createTicketMutation.mutate(
-				{
-					name: ticketName.trim(),
-					assigneeId,
-					estimatedHours: parsedHours,
-					status: TicketStatus.Todo,
-				},
-				{
-					onSuccess: () => {
-						setTicketName("");
-						setAssigneeId(assignableMembers[0]?.id ?? "");
-						setEstimatedHours("2");
-					},
-					onError: (mutationError) => {
-						setTicketFormError((mutationError as Error).message);
-					},
-				}
-			);
-		},
-		[
-			assigneeId,
-			assignableMembers,
-			canEdit,
-			createTicketMutation,
-			estimatedHours,
-			selectedProjectId,
-			ticketName,
-		]
-	);
-
 	if (isLoading) {
 		return <p className="state-message">Loading projects...</p>;
 	}
@@ -269,6 +158,14 @@ export default function KanbanBoard({ canEdit }: KanbanBoardProps) {
 		);
 	}
 
+	if (!selectedProjectId) {
+		return (
+			<p className="state-message">
+				Select an active project from the sidebar to view the Kanban board.
+			</p>
+		);
+	}
+
 	return (
 		<section className="dashboard-content">
 			<header className="kanban-header">
@@ -276,7 +173,7 @@ export default function KanbanBoard({ canEdit }: KanbanBoardProps) {
 					<h2>Project Ticket Board</h2>
 					<p>
 						{canEdit
-							? "Select a project, create tickets, then move cards across ticket states."
+							? "Select a project, then move cards across ticket states."
 							: "Read-only tickets for your assigned projects."}
 					</p>
 				</div>
@@ -285,77 +182,16 @@ export default function KanbanBoard({ canEdit }: KanbanBoardProps) {
 
 			<div className="kanban-toolbar">
 				<div className="kanban-project-picker">
-					<label htmlFor="kanban-project-select">
-						{canEdit ? "Select Project" : "Assigned Projects"}
-					</label>
-					<select
-						id="kanban-project-select"
-						value={selectedProjectId ?? ""}
-						onChange={(event) => setSelectedProjectId(event.target.value)}
-					>
-						{availableProjects.map((project) => (
-							<option key={project.id} value={project.id}>
-								{project.name}
-							</option>
-						))}
-					</select>
-					{!canEdit && selectedProject && (
-						<p className="kanban-assigned-project">Viewing: {selectedProject.name}</p>
-					)}
+					<p className="kanban-assigned-project">
+						Active project: {selectedProject?.name ?? ""}
+					</p>
+					<small>Change the active project from the sidebar.</small>
 				</div>
 
 				{canEdit && (
-					<form className="kanban-ticket-form" onSubmit={handleCreateTicket}>
-						<label>
-							Ticket Name
-							<input
-								type="text"
-								value={ticketName}
-								onChange={(event) => setTicketName(event.target.value)}
-								placeholder="e.g. Design login form"
-							/>
-						</label>
-						<label>
-							Assign To
-							<select
-								value={assigneeId}
-								onChange={(event) => setAssigneeId(event.target.value)}
-							>
-								{assignableMembers.length === 0 && (
-									<option value="">No team members available</option>
-								)}
-								{assignableMembers.map((member) => (
-									<option key={member.id} value={member.id}>
-										{member.name}
-									</option>
-								))}
-							</select>
-						</label>
-						<label>
-							Estimated Time (hours)
-							<input
-								type="number"
-								min={1}
-								step={1}
-								value={estimatedHours}
-								onChange={(event) => setEstimatedHours(event.target.value)}
-							/>
-						</label>
-						<button
-							type="submit"
-							disabled={createTicketMutation.isPending || assignableMembers.length === 0}
-						>
-							{createTicketMutation.isPending ? "Creating..." : "Create Ticket"}
-						</button>
-						{assignableMembers.length === 0 && (
-							<p className="state-message error">
-								Assign at least one team member to this project before creating tickets.
-							</p>
-						)}
-						{ticketFormError && (
-							<p className="state-message error">{ticketFormError}</p>
-						)}
-					</form>
+					<p className="state-message">
+						Create new tickets from the Backlog view.
+					</p>
 				)}
 			</div>
 
@@ -394,7 +230,7 @@ export default function KanbanBoard({ canEdit }: KanbanBoardProps) {
 									<div className="kanban-card-title-row">
 										<h4>{ticket.name}</h4>
 									</div>
-									<small>Estimated time: {ticket.estimatedHours}h</small>
+									<small>Estimated time: {ticket.estimatedHours}h </small>
 									<small>
 										Assigned: {memberMap.get(ticket.assigneeId) ?? "Unassigned"}
 									</small>
