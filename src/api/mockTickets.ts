@@ -130,3 +130,33 @@ export async function mockUpdateTicketStatus(
 
 	return updated;
 }
+
+export async function mockUpdateTicketAssignee(
+	user: User,
+	ticketId: string,
+	assigneeId: string
+): Promise<Ticket> {
+	await sleep(420);
+
+	if (user.role !== UserRoles.ProjectManager) {
+		throw new Error("Only project managers can assign tickets.");
+	}
+
+	const tickets = getStoredTickets();
+	const target = tickets.find((ticket) => ticket.id === ticketId);
+
+	if (!target) {
+		throw new Error("Ticket not found.");
+	}
+
+	const updated: Ticket = {
+		...target,
+		assigneeId,
+	};
+
+	setStoredTickets(
+		tickets.map((ticket) => (ticket.id === ticketId ? updated : ticket))
+	);
+
+	return updated;
+}
