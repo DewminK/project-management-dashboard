@@ -117,6 +117,14 @@ export default function DashboardShell({ children }: DashboardShellProps) {
 					>
 						Kanban Board
 					</NavLink>
+					<NavLink
+						to="/dashboard/team"
+						className={({ isActive }) =>
+							`dashboard-nav-link ${isActive ? "active" : ""}`.trim()
+						}
+					>
+						Team
+					</NavLink>
 				</nav>
 				<button className="ghost-button" onClick={handleLogout} type="button">
 					{logoutMutation.isPending ? "Logging out..." : "Logout"}
