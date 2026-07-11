@@ -5,6 +5,7 @@ import Backlog from "../pages/Backlog";
 import Home from "../pages/Home";
 import Kanban from "../pages/Kanban";
 import Login from "../pages/Login";
+import Team from "../pages/Team";
 
 export const router = createBrowserRouter([
 	{
@@ -33,6 +34,14 @@ export const router = createBrowserRouter([
 			ProtectedRoute,
 			null,
 			createElement(Backlog)
+		),
+	},
+	{
+		path: "/dashboard/team",
+		element: createElement(
+			ProtectedRoute,
+			null,
+			createElement(Team)
 		),
 	},
 ]);
