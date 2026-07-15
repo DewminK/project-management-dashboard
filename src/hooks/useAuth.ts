@@ -7,14 +7,17 @@ import {
 } from "../api/mockAuth";
 import { useAuthStore } from "../store/authStore";
 import type { LoginRequest, SignupRequest } from "../types/auth";
+import { useToast } from "../context/ToastContext";
 
 export function useLoginMutation() {
     const login = useAuthStore((state) => state.login);
+    const { showToast } = useToast();
 
     return useMutation({
         mutationFn: (credentials: LoginRequest) => mockLogin(credentials),
         onSuccess: (data) => {
             login(data);
+            showToast(`Welcome back, ${data.user.name}!`);
         },
     });
 }
